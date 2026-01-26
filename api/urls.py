@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import RegisterView, MeView
+from .views import RegisterView, MeView, ChatHistoryView
 
 from .views import (
     BranchListView,
@@ -26,6 +26,7 @@ urlpatterns = [
     path("admin/appointments/", AdminAllAppointmentsView.as_view(), name="admin_all_appointments"),
     path("branches/<int:branch_id>/slots/", BranchSlotsView.as_view(), name="branch_slots"),
     path("chat/", ChatView.as_view(), name="chat"),
+    path("chat/history/", ChatHistoryView.as_view(), name="chat_history"),
 
 ]
 

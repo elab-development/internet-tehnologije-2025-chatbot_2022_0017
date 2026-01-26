@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
-
+from .faq_matcher import match_faq
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import get_user_model
 from .models import Branch, Appointment, ChatMessage, FAQEntry
@@ -174,26 +174,41 @@ class ChatView(APIView):
     def post(self, request):
         ser = ChatRequestSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
+
         msg = ser.validated_data["message"]
-
-        context = build_context()
-
-        ai = groq_chat_json(msg, context=context)
-        intent = ai.get("intent", "unknown")
-        reply = ai.get("reply", "Nemam odgovor trenutno.")
-        link = ai.get("link", "")
-
         session_id = ser.validated_data.get("session_id") or "default"
 
-# snimi user poruku
+        # 1️⃣ FAQ layer (bez AI)
+        faq = match_faq(msg)
+        if faq:
+            ChatMessage.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                session_id=session_id,
+                role="user",
+                content=msg,
+            )
+            ChatMessage.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                session_id=session_id,
+                role="assistant",
+                content=faq["reply"],
+            )
+            return Response(faq)
+
+        # 2️⃣ AI fallback
+        context = build_context()
+        ai = groq_chat_json(msg, context=context)
+
+        reply = ai.get("reply", "Nemam odgovor trenutno.")
+        intent = ai.get("intent", "unknown")
+        link = ai.get("link", "")
+
         ChatMessage.objects.create(
             user=request.user if request.user.is_authenticated else None,
             session_id=session_id,
             role="user",
             content=msg,
         )
-
-        # snimi bot odgovor
         ChatMessage.objects.create(
             user=request.user if request.user.is_authenticated else None,
             session_id=session_id,
@@ -201,5 +216,28 @@ class ChatView(APIView):
             content=reply,
         )
 
-        data = {"intent": intent, "reply": reply, "link": link or ""}
+        return Response({
+            "intent": intent,
+            "reply": reply,
+            "link": link or ""
+        })
+
+class ChatHistoryView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        qs = ChatMessage.objects.filter(
+            user=request.user
+        ).order_by("created_at")
+
+        data = [
+            {
+                "role": m.role,
+                "content": m.content,
+                "created_at": m.created_at,
+            }
+            for m in qs
+        ]
+
         return Response(data)
+
