@@ -1,5 +1,9 @@
 import api from "./api";
 
+export async function fetchMyAppointments() {
+  const res = await api.get("/appointments/my/");
+  return res.data;
+}
 export async function getBranches() {
   const res = await api.get("/branches/");
   return res.data;
