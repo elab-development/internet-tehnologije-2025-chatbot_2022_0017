@@ -7,6 +7,8 @@ import MyAppointments from "./pages/MyAppointments.jsx";
 import { useAuth } from "./context/AuthContext.jsx"; // prilagodi ako ti je /contexts/
 import Navbar from "./components/Navbar";
 import FloatingChat from "./components/FloatingChat";
+import Branches from "./pages/Branches.jsx";
+
 
 function Protected({ children }) {
   const { isLoading, isAuthed } = useAuth();
@@ -36,6 +38,15 @@ export default function App() {
             }
           />
           <Route
+            path="/branches"
+            element={
+              <Protected>
+                <Branches />
+              </Protected>
+            }
+          />
+
+          <Route
             path="/my-appointments"
             element={
               <Protected>
@@ -52,4 +63,3 @@ export default function App() {
     </div>
   );
 }
-  
