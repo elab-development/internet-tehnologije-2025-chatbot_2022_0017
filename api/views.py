@@ -15,6 +15,7 @@ from django.utils import timezone
 from .serializers import ChatRequestSerializer
 from .groq_client import groq_chat_json
 User = get_user_model()
+from .permissions import IsEmployeeRole
 
 
 def home(request):
@@ -90,6 +91,25 @@ class AdminAllAppointmentsView(APIView):
 
     def get(self, request):
         qs = Appointment.objects.all().order_by("-start_time")
+        return Response(AppointmentSerializer(qs, many=True).data)
+    
+
+class EmployeeAppointmentsView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsEmployeeRole]
+
+    def get(self, request):
+        # zaposleni mora imati dodeljenu filijalu
+        if not request.user.branch_id:
+            return Response(
+                {"detail": "Zaposleni nema dodeljenu filijalu."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        qs = Appointment.objects.filter(
+            branch_id=request.user.branch_id,
+            status="booked"
+        ).order_by("start_time")
+
         return Response(AppointmentSerializer(qs, many=True).data)
 
 

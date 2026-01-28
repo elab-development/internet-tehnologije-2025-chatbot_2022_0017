@@ -10,7 +10,21 @@ class User(AbstractUser):
         ("employee", "Employee"),
         ("admin", "Admin"),
     )
+
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
+
+    branch = models.ForeignKey(
+        "Branch",            
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="employees",
+    )
+
+    def save(self, *args, **kwargs):
+        if self.is_superuser:
+            self.role = "admin"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username} ({self.role})"

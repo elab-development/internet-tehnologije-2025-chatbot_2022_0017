@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx"; // prilagodi putanju
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -11,7 +11,7 @@ export default function Navbar() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top border-bottom border-secondary">
       <div className="container">
-<span className="navbar-brand fw-bold">Banka</span>
+        <span className="navbar-brand fw-bold">Banka</span>
 
         <button
           className="navbar-toggler"
@@ -27,13 +27,33 @@ export default function Navbar() {
             <li className="nav-item">
               <NavLink to="/" className={linkClass}>Početna</NavLink>
             </li>
+
             <li className="nav-item">
               <NavLink to="/branches" className={linkClass}>Filijale</NavLink>
             </li>
-            <li className="nav-item">
-              <NavLink to="/my-appointments" className={linkClass}>Moji termini</NavLink>
-            </li>
+
+            {/* Moji termini - samo za običnog korisnika */}
+            {user?.role === "user" && (
+              <li className="nav-item">
+                <NavLink to="/my-appointments" className={linkClass}>Moji termini</NavLink>
+              </li>
+            )}
+
+            {/* Employee panel */}
+            {user?.role === "employee" && (
+              <li className="nav-item">
+                <NavLink to="/employee" className={linkClass}>Termini filijale</NavLink>
+              </li>
+            )}
+
+            {/* Admin panel (placeholder, možeš posle da napraviš stranicu) */}
+            {user?.role === "admin" && (
+              <li className="nav-item">
+                <NavLink to="/admin" className={linkClass}>Admin</NavLink>
+              </li>
+            )}
           </ul>
+
           <div className="d-flex align-items-center gap-2">
             {!user ? (
               <>
@@ -43,8 +63,10 @@ export default function Navbar() {
             ) : (
               <>
                 <span className="text-white-50 small">
-                  Ulogovan: <span className="text-white fw-semibold">{user.username}</span>
+                  Ulogovan: <span className="text-white fw-semibold">{user.username}</span>{" "}
+                  (<span className="text-white">{user.role}</span>)
                 </span>
+
                 <button
                   className="btn btn-outline-light btn-sm"
                   onClick={() => {

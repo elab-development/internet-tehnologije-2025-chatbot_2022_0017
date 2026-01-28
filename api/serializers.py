@@ -2,11 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.utils import timezone
-
 from .models import Branch, Appointment
 
 User = get_user_model()
-
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,15 +41,16 @@ class BranchSerializer(serializers.ModelSerializer):
         model = Branch
         fields = ("id", "name", "address", "city", "open_time", "close_time", "slot_minutes")
 
-
 class AppointmentSerializer(serializers.ModelSerializer):
     branch = BranchSerializer(read_only=True)
     branch_id = serializers.IntegerField(write_only=True)
 
+    user_username = serializers.CharField(source="user.username", read_only=True)
+
     class Meta:
         model = Appointment
-        fields = ("id", "branch", "branch_id", "start_time", "status", "created_at")
-        read_only_fields = ("id", "status", "created_at", "branch")
+        fields = ("id", "branch", "branch_id", "user_username", "start_time", "status", "created_at")
+        read_only_fields = ("id", "status", "created_at", "branch", "user_username")
 
     def validate_start_time(self, value):
         if value < timezone.now():
@@ -96,6 +95,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
         user = validated_data.pop("user")
         validated_data.pop("branch_id", None)
         return Appointment.objects.create(branch=branch, user=user, **validated_data)
+
+    
 class ChatRequestSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=2000)
     session_id = serializers.CharField(max_length=64, required=False, allow_blank=True, default="")
