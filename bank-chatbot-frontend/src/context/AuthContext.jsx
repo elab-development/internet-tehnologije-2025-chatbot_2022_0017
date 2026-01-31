@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import  { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { fetchMe, logoutUser } from "../api/auth";
 
 const AuthContext = createContext(null);
@@ -7,7 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const hasToken = !!localStorage.getItem("access"); // ✅
+  const hasToken = !!localStorage.getItem("access"); 
 
   async function refreshUser() {
     try {
@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
       setUser(me);
     } catch (e) {
       setUser(null);
-      logoutUser(); // briše access/refresh
+      logoutUser(); 
     } finally {
       setIsLoading(false);
     }
@@ -24,7 +24,6 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (hasToken) refreshUser();
     else setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function logout() {
@@ -37,8 +36,8 @@ export function AuthProvider({ children }) {
       user,
       setUser,
       isLoading,
-      isAuthed: !!user,     // user učitan => authed
-      hasToken,             // ✅ korisno za guard
+      isAuthed: !!user,     
+      hasToken,             
       refreshUser,
       logout,
     }),

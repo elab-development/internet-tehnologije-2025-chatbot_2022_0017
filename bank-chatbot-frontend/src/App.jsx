@@ -109,7 +109,7 @@ export default function App() {
           />
 
           {/* EMPLOYEE ruta (za sada placeholder) */}
-          <Route
+          {/* <Route
             path="/employee"
             element={
               <RoleProtected allow={["employee"]}>
@@ -119,7 +119,7 @@ export default function App() {
                 </div>
               </RoleProtected>
             }
-          />
+          /> */}
 
           {/* ADMIN ruta (placeholder) */}
           <Route

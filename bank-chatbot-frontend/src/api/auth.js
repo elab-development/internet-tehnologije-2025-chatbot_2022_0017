@@ -1,5 +1,15 @@
 // src/api/auth.js
 import api from "./api"; // tvoj axios instance
+// src/api/auth.js
+import axios from "axios";
+
+export async function me() {
+  const token = localStorage.getItem("access");
+  const res = await axios.get("http://127.0.0.1:8000/api/auth/me/", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.data;
+}
 
 export async function registerUser({ username, email, password, password2 }) {
   const res = await api.post("/auth/register/", {

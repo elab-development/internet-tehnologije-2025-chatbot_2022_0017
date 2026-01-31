@@ -155,3 +155,53 @@ h1, h2, h3 {
 .list-group-item:hover {
   transform: translateY(-1px);
 }
+.sticky-actions{
+  position: sticky;
+  bottom: 0;
+  background: rgba(33,37,41,0.95); /* da se uklopi u bg-dark */
+  backdrop-filter: blur(6px);
+  padding-bottom: 12px;
+}
+.toast-wrap{
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 9999;
+}
+
+.toast-card{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(25, 135, 84, 0.18);
+  border: 1px solid rgba(25, 135, 84, 0.35);
+  color: #eafff3;
+  padding: 12px 14px;
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  transform: translateY(-10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: 200ms ease;
+  min-width: 260px;
+  max-width: 360px;
+}
+
+.toast-card.show{
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast-icon{
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: rgba(25, 135, 84, 0.25);
+  border: 1px solid rgba(25, 135, 84, 0.4);
+  border-radius: 10px;
+}
+.toast-text{
+  font-weight: 600;
+}
