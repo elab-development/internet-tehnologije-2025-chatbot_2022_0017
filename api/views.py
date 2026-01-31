@@ -1,3 +1,4 @@
+from httpx import request
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
@@ -55,6 +56,13 @@ class AppointmentCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        user = request.user
+
+        if user.is_staff:
+            return Response(
+                {"detail": "Zaposleni ne mogu rezervisati termine."},
+                status=403
+        )
         serializer = AppointmentSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         appt = serializer.save()

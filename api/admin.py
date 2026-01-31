@@ -1,13 +1,45 @@
 from django.contrib import admin
 from .models import User, Branch, Appointment, FAQEntry, ChatMessage
+from django import forms
+from django.contrib import admin
+from .models import User
 
+class UserAdminForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        role = cleaned.get("role")
+        branch = cleaned.get("branch")
+        is_staff = cleaned.get("is_staff")
+        is_superuser = cleaned.get("is_superuser")
+
+        if is_superuser:
+            cleaned["role"] = "admin"
+            cleaned["is_staff"] = True
+            return cleaned
+
+        if role == "employee":
+            # employee => staff
+            cleaned["is_staff"] = True
+
+            # employee => branch obavezan
+            if not branch:
+                raise forms.ValidationError("Zaposleni mora imati dodijeljenu filijalu/banku.")
+
+        if is_staff and role == "user":
+            raise forms.ValidationError("Ako je is_staff=True, role mora biti employee ili admin.")
+
+        return cleaned
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ("username", "email", "role", "is_staff", "is_superuser")
-    list_filter = ("role", "is_staff", "is_superuser")
+    form = UserAdminForm
+    list_display = ("username", "email", "role", "branch", "is_staff", "is_superuser")
+    list_filter = ("role", "branch", "is_staff", "is_superuser")
     search_fields = ("username", "email")
-
 
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):

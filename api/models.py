@@ -4,30 +4,54 @@ from django.conf import settings
 from datetime import time
 
 
+from django.core.exceptions import ValidationError
+
 class User(AbstractUser):
     ROLE_CHOICES = (
         ("user", "User"),
         ("employee", "Employee"),
         ("admin", "Admin"),
     )
-
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="user")
 
     branch = models.ForeignKey(
-        "Branch",            
+        "Branch",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="employees",
     )
 
-    def save(self, *args, **kwargs):
+    def clean(self):
+        super().clean()
+
+        # 1) Superuser => admin + staff
         if self.is_superuser:
             self.role = "admin"
+            self.is_staff = True
+
+        # 2) Employee => mora biti staff
+        if self.role == "employee":
+            self.is_staff = True
+
+            # 3) Employee => mora imati branch
+            if not self.branch_id:
+                raise ValidationError({"branch": "Zaposleni mora imati dodijeljenu filijalu/banku."})
+
+        # 4) Staff => role mora biti employee ili admin
+        if self.is_staff and self.role == "user":
+            raise ValidationError({"role": "Ako je is_staff=True, role mora biti employee ili admin."})
+
+        # 5) Običan user (nije admin) => nije staff
+        if self.role == "user" and not self.is_superuser:
+            self.is_staff = False
+
+    def save(self, *args, **kwargs):
+        # da validacija radi uvijek (admin, shell, API…)
+        self.full_clean()
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return f"{self.username} ({self.role})"
+
 
 
 class Branch(models.Model):
