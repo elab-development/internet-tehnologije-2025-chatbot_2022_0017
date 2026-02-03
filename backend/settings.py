@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     # Treće strane
+     'drf_spectacular',
     'rest_framework',
     'rest_framework_simplejwt',
     "corsheaders",
@@ -129,12 +129,18 @@ STATIC_URL = 'static/'
 from datetime import timedelta
 
 REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",  # globalno, kasnije ćemo po view-ovima stezati
     ],
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Bank Chatbot API",
+    "DESCRIPTION": "API za filijale, termine, autentifikaciju i chat.",
+    "VERSION": "1.0.0",
 }
 
 SIMPLE_JWT = {
