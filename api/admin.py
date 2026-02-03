@@ -22,10 +22,8 @@ class UserAdminForm(forms.ModelForm):
             return cleaned
 
         if role == "employee":
-            # employee => staff
             cleaned["is_staff"] = True
 
-            # employee => branch obavezan
             if not branch:
                 raise forms.ValidationError("Zaposleni mora imati dodijeljenu filijalu/banku.")
 

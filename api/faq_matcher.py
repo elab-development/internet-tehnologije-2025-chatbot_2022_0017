@@ -9,9 +9,7 @@ def normalize(text: str) -> str:
 def match_faq(message: str) -> Optional[Dict]:
     msg = normalize(message)
 
-    # --------------------
-    # RADNO VREME FILIJALA
-    # --------------------
+    
     if any(k in msg for k in ["radno vreme", "radno vrijeme", "kada rade", "radite", "radite li"]):
         return {
             "intent": "branches_hours",
@@ -19,9 +17,7 @@ def match_faq(message: str) -> Optional[Dict]:
             "link": ""
         }
 
-    # --------------------
-    # LISTA / ADRESE FILIJALA
-    # --------------------
+   
     if any(k in msg for k in ["filijale", "poslovnice", "gde se nalazite", "adresa"]):
         branches = Branch.objects.all().order_by("city", "name")
         if not branches:
@@ -39,9 +35,7 @@ def match_faq(message: str) -> Optional[Dict]:
             "link": ""
         }
 
-    # --------------------
-    # DOKUMENTA
-    # --------------------
+   
     if any(k in msg for k in ["dokument", "papiri", "šta mi treba", "sta mi treba"]):
         return {
             "intent": "docs_required",
@@ -53,9 +47,7 @@ def match_faq(message: str) -> Optional[Dict]:
             "link": ""
         }
 
-    # --------------------
-    # TERMINI / ZAKAZIVANJE
-    # --------------------
+ 
     if any(k in msg for k in ["termin", "zakaz", "rezerv"]):
         return {
             "intent": "appointments_help",

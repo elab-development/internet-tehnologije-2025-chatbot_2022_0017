@@ -30,7 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop("password2")
         password = validated_data.pop("password")
         user = User(**validated_data)
-        user.role = "user"  # zakucaj
+        user.role = "user"  
         user.set_password(password)
         user.save()
         return user

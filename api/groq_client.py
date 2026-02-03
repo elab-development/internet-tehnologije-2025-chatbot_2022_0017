@@ -1,6 +1,8 @@
 import os
 import json
 import logging
+import datetime
+import re
 from typing import Any, Dict, List, Optional, Literal, TypedDict
 
 from openai import OpenAI
@@ -9,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ----------------------------
-# Logging (ne smeta u prod-u, samo utiče ako ga uključiš)
+# Logging
 # ----------------------------
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,50 +28,80 @@ Intent = Literal[
     "fx_rate",
     "docs_required",
     "faq",
+    "today_date",
+    "current_time",
+    "general",
     "unknown",
 ]
+
 
 class ChatTurn(TypedDict):
     role: Literal["user", "assistant"]
     content: str
+
 
 class BotResponse(TypedDict):
     intent: Intent
     reply: str
     link: str
 
+
+_ALLOWED_INTENTS = {
+    "greeting",
+    "branches_hours",
+    "branches_list",
+    "appointments_help",
+    "appointments_slots",
+    "fx_rate",
+    "docs_required",
+    "faq",
+    "today_date",
+    "current_time",
+    "general",
+    "unknown",
+}
+
 # ----------------------------
-# Prompt
+# Prompt (general assistant + bank focus)
 # ----------------------------
 SYSTEM_PROMPT = """
-Ti si bankarski chatbot za Srbiju. Pomažeš korisnicima oko:
-- filijala i radnog vremena
-- rezervacije termina (koraci, potrebni podaci, slobodni slotovi)
-- osnovne informacije o dokumentima
-- FAQ o bankarskim uslugama (na visokom nivou)
+Ti si koristan asistent koji prvenstveno pomaže kao bankarski chatbot za Srbiju (filijale, radno vreme, termini, dokumentacija, osnovni info).
+ALI: možeš odgovoriti i na opšta pitanja korisnika (datum, vreme, škola, tehnologije, itd).
+Ako pitanje nije bankarsko, slobodno odgovori normalno i kratko.
 
 OBAVEZNO: Odgovori ISKLJUČIVO validnim JSON-om (bez dodatnog teksta, bez markdown-a).
 
 Schema:
 {
-  "intent": "greeting|branches_hours|branches_list|appointments_help|appointments_slots|fx_rate|docs_required|faq|unknown",
+  "intent": "greeting|branches_hours|branches_list|appointments_help|appointments_slots|fx_rate|docs_required|faq|today_date|current_time|general|unknown",
   "reply": "kratak i koristan odgovor na srpskom",
   "link": "opciono, ili prazno"
 }
 
 Pravila:
-- reply max ~2-4 rečenice, jasno i profesionalno
-- Ako korisnik pita nejasno (npr. 'a kako to', 'šta još'), postavi 1-2 potpitanja ili ponudi 3 konkretne opcije.
-- Ne izmišljaj tarife/kurseve/tačne podatke ako nisu u KONTEKSTU/STATE; ako nema info → intent=unknown i uputi na zvaničan kontakt.
-- link neka bude "" ako nema
-- JSON mora da se parsira sa json.loads bez greške
-- Ne ponavljaj istu generičku rečenicu (tipa 'Mogu da pomognem...') više puta.
-
-Primeri (format je OBAVEZNO JSON):
-{"intent":"greeting","reply":"Zdravo! Mogu pomoći oko filijala, termina i potrebne dokumentacije. Šta vam treba?","link":""}
-{"intent":"appointments_help","reply":"Da biste rezervisali termin, recite: filijalu, datum i uslugu. Da li već imate izabranu filijalu?","link":""}
-{"intent":"unknown","reply":"Ne mogu pouzdano da odgovorim bez dodatnih informacija. Možete li precizirati pitanje ili kontaktirati banku?","link":""}
+- reply max 2-4 rečenice, jasno i prirodno.
+- Ako je pitanje nejasno, postavi 1 kratko potpitanje ILI ponudi 3 opcije.
+- Ne izmišljaj tačne bankarske podatke (tarife, kurseve, radno vreme) ako nisu dati u STATE/KONTEKSTU; u tom slučaju traži dodatnu informaciju ili uputi na zvaničan kontakt.
+- Za opšta pitanja (npr. datum/vreme), odgovori direktno: intent=general ili today_date/current_time.
+- link neka bude "" ako nema.
+- JSON mora da se parsira sa json.loads bez greške.
+- Ne ponavljaj istu generičku rečenicu više puta.
 """.strip()
+
+REPAIR_PROMPT = """
+Popravi sledeći sadržaj u VALIDAN JSON objekat tačno po zadatoj šemi.
+Vrati ISKLJUČIVO JSON (bez dodatnog teksta).
+
+Schema:
+{
+  "intent": "greeting|branches_hours|branches_list|appointments_help|appointments_slots|fx_rate|docs_required|faq|today_date|current_time|general|unknown",
+  "reply": "kratak i koristan odgovor na srpskom",
+  "link": "opciono, ili prazno"
+}
+
+Sadržaj za popravku:
+""".strip()
+
 
 # ----------------------------
 # Client
@@ -81,15 +113,14 @@ def groq_client() -> OpenAI:
     base_url = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
     return OpenAI(api_key=key, base_url=base_url)
 
+
 # ----------------------------
-# JSON extraction (balanced braces) - stabilnije od regex-a
+# Helpers
 # ----------------------------
 def _extract_first_json_object_balanced(text: str) -> str:
     s = (text or "").strip()
     if not s:
         return ""
-
-    # Brzi put: već izgleda kao JSON objekat
     if s.startswith("{") and s.endswith("}"):
         return s
 
@@ -106,16 +137,8 @@ def _extract_first_json_object_balanced(text: str) -> str:
             depth -= 1
             if depth == 0:
                 return s[start : i + 1].strip()
-
     return ""
 
-# ----------------------------
-# Validation / normalization
-# ----------------------------
-_ALLOWED_INTENTS = {
-    "greeting", "branches_hours", "branches_list", "appointments_help",
-    "appointments_slots", "fx_rate", "docs_required", "faq", "unknown"
-}
 
 def _normalize_output(data: Dict[str, Any]) -> BotResponse:
     intent = str(data.get("intent") or "unknown").strip()
@@ -126,19 +149,17 @@ def _normalize_output(data: Dict[str, Any]) -> BotResponse:
         intent = "unknown"
 
     if not reply:
-        reply = "Ne mogu pouzdano da odgovorim na to. Molim vas kontaktirajte banku."
+        intent = "unknown"
+        reply = "Nisam siguran kako da odgovorim na to. Možeš li precizirati pitanje?"
 
     return {"intent": intent, "reply": reply, "link": link}  # type: ignore[return-value]
 
-# ----------------------------
-# Build user content with optional context/state
-# ----------------------------
+
 def _build_user_content(user_message: str, context: str = "", state: Optional[Dict[str, Any]] = None) -> str:
     user_message = (user_message or "").strip()
 
     parts: List[str] = []
     if state:
-        # state u JSON-u je super jer model zna šta je "izvor istine"
         parts.append("STATE (pouzdan izvor istine):\n" + json.dumps(state, ensure_ascii=False))
 
     if context.strip():
@@ -147,87 +168,154 @@ def _build_user_content(user_message: str, context: str = "", state: Optional[Di
     parts.append("PITANJE KORISNIKA:\n" + user_message)
     return "\n\n".join(parts).strip()
 
-# ----------------------------
-# Optional: attempt to "repair" invalid JSON by asking model again
-# ----------------------------
-REPAIR_PROMPT = """
-Popravi sledeći sadržaj u VALIDAN JSON objekat tačno po zadatoj šemi.
-Vrati ISKLJUČIVO JSON (bez dodatnog teksta).
 
-Schema:
-{
-  "intent": "greeting|branches_hours|branches_list|appointments_help|appointments_slots|fx_rate|docs_required|faq|unknown",
-  "reply": "kratak i koristan odgovor na srpskom",
-  "link": "opciono, ili prazno"
-}
+def _compact_history(history: List[ChatTurn], max_turns: int) -> List[ChatTurn]:
+    """
+    Ne šalji cijelu istoriju:
+    - uzmi samo zadnjih max_turns poruka
+    - izbaci preduge poruke (da ne “zaglave” stil)
+    - normalizuj whitespace
+    """
+    trimmed = history[-max_turns:] if max_turns > 0 else []
+    out: List[ChatTurn] = []
+    for t in trimmed:
+        role = t.get("role", "user")
+        content = (t.get("content") or "").strip()
+        if role not in ("user", "assistant") or not content:
+            continue
 
-Sadržaj za popravku:
-""".strip()
+        # skrati mega-duge poruke da ne “preuzmu” ton razgovora
+        if len(content) > 800:
+            content = content[:800].rstrip() + "…"
+
+        # očisti višestruke razmake/novi red
+        content = re.sub(r"\s+", " ", content).strip()
+        out.append({"role": role, "content": content})
+    return out
+
+
+def _is_date_question(msg: str) -> bool:
+    m = (msg or "").lower()
+    triggers = [
+        "koji je datum",
+        "datum danas",
+        "danasnji datum",
+        "koji je dan danas",
+        "koji je danas dan",
+        "današnji datum",
+    ]
+    return any(t in m for t in triggers)
+
+
+def _is_time_question(msg: str) -> bool:
+    m = (msg or "").lower()
+    triggers = [
+        "koliko je sati",
+        "trenutno vreme",
+        "trenutno vrijeme",
+        "koje je vrijeme",
+        "vreme sada",
+        "vrijeme sada",
+    ]
+    return any(t in m for t in triggers)
+
+
+def _today_reply() -> str:
+    today = datetime.date.today()
+    # Dan u sedmici na srpskom (ekavica)
+    days = {
+        0: "ponedeljak",
+        1: "utorak",
+        2: "sreda",
+        3: "četvrtak",
+        4: "petak",
+        5: "subota",
+        6: "nedelja",
+    }
+    return f"Danas je {days[today.weekday()]}, {today.strftime('%d.%m.%Y')}."
+
+
+def _time_reply() -> str:
+    now = datetime.datetime.now()
+    return f"Trenutno je {now.strftime('%H:%M')}."
+
 
 # ----------------------------
-# Main function
+# Main
 # ----------------------------
 def groq_chat_json(
     user_message: str,
     context: str = "",
     history: Optional[List[ChatTurn]] = None,
     state: Optional[Dict[str, Any]] = None,
-    max_history_turns: int = 10,
+    max_history_turns: int = 6,  # DEFAULT MANJE: da ne “pamti sve”
 ) -> BotResponse:
     """
     user_message: trenutno pitanje korisnika
     context: pouzdan tekstualni kontekst (npr. iz baze)
     history: lista prethodnih poruka [{"role":"user"/"assistant","content":"..."}]
     state: struktura (filijala/datum/usluga/slotovi...) - najstabilnije za rezervacije
-    max_history_turns: koliko zadnjih poruka da proslediš modelu
+    max_history_turns: koliko zadnjih poruka da proslediš modelu (preporuka 4-8)
     """
-    client = groq_client()
-    model = os.getenv("GROQ_MODEL", "llama3-8b-8192")
 
-    user_content = _build_user_content(user_message, context=context, state=state)
+    msg = (user_message or "").strip()
+    if not msg:
+        return {"intent": "unknown", "reply": "Napiši pitanje pa ću pomoći.", "link": ""}
+
+    # 0) Brzi odgovori bez modela (stabilno + bolje UX)
+    if _is_date_question(msg):
+        return {"intent": "today_date", "reply": _today_reply(), "link": ""}
+
+    if _is_time_question(msg):
+        return {"intent": "current_time", "reply": _time_reply(), "link": ""}
+
+    client = groq_client()
+
+    # Preporuka: na .env stavi GROQ_MODEL=openai/gpt-oss-120b
+    model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+
+    user_content = _build_user_content(msg, context=context, state=state)
 
     messages: List[Dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    # Dodaj zadnjih N poruka radi konteksta (sprječava "a kako to" random odgovore)
+    # 1) Ograničena istorija
     if history:
-        trimmed = history[-max_history_turns:]
-        for turn in trimmed:
-            role = turn.get("role", "user")
-            content = (turn.get("content") or "").strip()
-            if role in ("user", "assistant") and content:
-                messages.append({"role": role, "content": content})
+        compact = _compact_history(history, max_history_turns)
+        for turn in compact:
+            messages.append({"role": turn["role"], "content": turn["content"]})
 
     messages.append({"role": "user", "content": user_content})
 
-    # Poziv
+    # 2) Poziv
+    temperature = float(os.getenv("GROQ_TEMPERATURE", "0.7"))
+    max_tokens = int(os.getenv("GROQ_MAX_TOKENS", "500"))
+
     try:
         resp = client.chat.completions.create(
             model=model,
             messages=messages,
-            temperature=float(os.getenv("GROQ_TEMPERATURE", "0.2")),
-            max_tokens=int(os.getenv("GROQ_MAX_TOKENS", "320")),
-            # Ako Groq/account/model podržava — ogromno poboljšanje stabilnosti
+            temperature=temperature,
+            max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
     except TypeError:
-        # wrapper/server ne podržava response_format ili max_tokens
         resp = client.chat.completions.create(
             model=model,
             messages=messages,
-            temperature=float(os.getenv("GROQ_TEMPERATURE", "0.2")),
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
 
     content = (resp.choices[0].message.content or "").strip()
     if not content:
         return {"intent": "unknown", "reply": "Nisam dobio odgovor od modela.", "link": ""}
 
-    # 1) Direktni json.loads
+    # 3) Parse
     try:
         return _normalize_output(json.loads(content))
     except Exception:
         pass
 
-    # 2) Izvuci prvi JSON objekat (balanced)
     blob = _extract_first_json_object_balanced(content)
     if blob:
         try:
@@ -235,7 +323,7 @@ def groq_chat_json(
         except Exception:
             pass
 
-    # 3) Repair pass (opciono, ali spašava dosta slučajeva)
+    # 4) Repair pass (samo ako baš mora)
     try:
         repair_messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -254,6 +342,7 @@ def groq_chat_json(
                 model=model,
                 messages=repair_messages,
                 temperature=0.0,
+                max_tokens=250,
             )
 
         repaired = (repair_resp.choices[0].message.content or "").strip()
@@ -266,9 +355,9 @@ def groq_chat_json(
     except Exception as e:
         logger.info("Repair pass failed: %s", e)
 
-    # 4) Final fallback
+    # 5) Final fallback (vrati skraćeno, ali bez rušenja)
     return {
-        "intent": "unknown",
+        "intent": "general",
         "reply": content[:600] if content else "Nisam uspeo da generišem validan odgovor.",
         "link": "",
     }

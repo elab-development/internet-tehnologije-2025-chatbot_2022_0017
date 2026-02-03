@@ -100,9 +100,7 @@ class Appointment(models.Model):
         return f"{self.user} @ {self.branch} - {self.start_time} ({self.status})"
 
 
-# ----------------------------
-# Chatbot: FAQ entries u bazi
-# ----------------------------
+
 class FAQEntry(models.Model):
     intent = models.CharField(max_length=50, default="faq", db_index=True)
     question = models.CharField(max_length=255)
@@ -122,9 +120,7 @@ class FAQEntry(models.Model):
         return f"[{self.intent}] {self.question}"
 
 
-# ----------------------------
-# Chatbot: pamćenje poruka
-# ----------------------------
+
 class ChatMessage(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

@@ -1,4 +1,5 @@
 from httpx import request
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
@@ -6,17 +7,57 @@ from .faq_matcher import match_faq
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import get_user_model
 from .models import Branch, Appointment, ChatMessage, FAQEntry
-
 from .serializers import RegisterSerializer, UserSerializer, BranchSerializer, AppointmentSerializer
 from .permissions import IsAdminRole
-
 from datetime import datetime, time
 from django.utils import timezone
-
 from .serializers import ChatRequestSerializer
 from .groq_client import groq_chat_json
 User = get_user_model()
 from .permissions import IsEmployeeRole
+import os
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+
+class WeatherView(APIView):
+    def get(self, request):
+        city = request.query_params.get("city", "Belgrade")
+        api_key = os.getenv("OPENWEATHER_API_KEY")
+
+        if not api_key:
+            return Response(
+                {"error": "OPENWEATHER_API_KEY nije podešen"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        url = "https://api.openweathermap.org/data/2.5/weather"
+        params = {
+            "q": city,
+            "appid": api_key,
+            "units": "metric",
+            "lang": "sr"
+        }
+
+        try:
+            r = requests.get(url, params=params, timeout=10)
+            r.raise_for_status()
+            data = r.json()
+
+            # Vraćamo samo ono što nam treba (čisto i pregledno)
+            return Response({
+                "city": data["name"],
+                "temperature": data["main"]["temp"],
+                "feels_like": data["main"]["feels_like"],
+                "humidity": data["main"]["humidity"],
+                "description": data["weather"][0]["description"],
+                "wind": data["wind"]["speed"]
+            })
+        except requests.exceptions.RequestException:
+            return Response(
+                {"error": "Greška pri pozivu OpenWeather servisa"},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
 
 
 def home(request):
@@ -106,7 +147,6 @@ class EmployeeAppointmentsView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsEmployeeRole]
 
     def get(self, request):
-        # zaposleni mora imati dodeljenu filijalu
         if not request.user.branch_id:
             return Response(
                 {"detail": "Zaposleni nema dodeljenu filijalu."},
@@ -159,7 +199,6 @@ class BranchSlotsView(APIView):
         now = timezone.now()
 
         while cur < end_dt:
-            # ne nudimo prošle slotove
             if cur > now and cur not in booked:
                 slots.append(cur.isoformat())
             cur += slot_delta
@@ -183,8 +222,6 @@ def build_context() -> str:
     parts = []
     if branch_lines:
         parts.append("Filijale (top 10):\n" + "\n".join(branch_lines))
-
-    # FAQ je opcionalno (samo ako postoji model/tabela)
     try:
         faqs = FAQEntry.objects.filter(is_active=True).order_by("category")[:10]
         faq_lines = [f"- Q: {f.question} | A: {f.answer[:120]}..." for f in faqs]
@@ -208,7 +245,6 @@ class ChatView(APIView):
 
         user_obj = request.user if request.user.is_authenticated else None
 
-        # 1) Snimi user poruku
         ChatMessage.objects.create(
             user=user_obj,
             session_id=session_id,
@@ -216,7 +252,6 @@ class ChatView(APIView):
             content=msg,
         )
 
-        # 2) FAQ layer (bez AI)
         faq = match_faq(msg)
         if faq:
             ChatMessage.objects.create(
@@ -227,7 +262,6 @@ class ChatView(APIView):
             )
             return Response({"intent": faq.get("intent", "faq"), "reply": faq["reply"], "link": ""})
 
-        # 3) AI fallback (Groq)
         try:
             context = build_context()
             ai = groq_chat_json(msg, context=context)

@@ -205,3 +205,16 @@ h1, h2, h3 {
 .toast-text{
   font-weight: 600;
 }
+.weather-card {
+  background: rgba(20, 20, 30, 0.7); /* tamna + prozirna */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+
+  color: #f1f1f1;
+  padding: 1.25rem;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}

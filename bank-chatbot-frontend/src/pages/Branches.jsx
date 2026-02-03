@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getBranches } from "../api/appointments";
 import { useNavigate } from "react-router-dom";
+import WeatherCard from "../components/WeatherCard";
+
 
 export default function Branches() {
   const [branches, setBranches] = useState([]);
@@ -23,6 +25,7 @@ export default function Branches() {
   }, []);
 
   return (
+    
     <div className="container py-4">
       <div className="d-flex align-items-center justify-content-between mb-3">
         <h3 className="mb-0">Filijale</h3>
@@ -31,12 +34,18 @@ export default function Branches() {
         </button>
       </div>
 
+      {/* 🔽 VREMENSKA PROGNOZA */}
+      <div className="mb-4">
+        <WeatherCard city="Belgrade" />
+      </div>
+
       {loading && (
         <div className="d-flex align-items-center gap-2 text-white-50">
           <div className="spinner-border spinner-border-sm" role="status" />
           Učitavam...
         </div>
       )}
+
 
       {err && (
         <div className="alert alert-danger mt-3 mb-0" role="alert">
