@@ -1,6 +1,6 @@
 from typing import Optional, Dict
 from .models import Branch, FAQEntry
-
+import requests
 
 def normalize(text: str) -> str:
     return text.lower()
@@ -8,7 +8,30 @@ def normalize(text: str) -> str:
 
 def match_faq(message: str) -> Optional[Dict]:
     msg = normalize(message)
+    # 🌤️ VREMENSKA PROGNOZA
+    if any(k in msg for k in ["stepeni", "temperatura", "vreme", "vrijeme"]):
+        try:
+            r = requests.get(
+                "http://localhost:8000/api/weather/",
+                timeout=5
+            )
+            r.raise_for_status()
+            data = r.json()
 
+            return {
+                "intent": "weather_current",
+                "reply": (
+                f"Trenutno je {round(data['temperature'])}°C u {data['city']}, "
+                f"osjeća se kao {round(data['feels_like'])}°C."
+                        ),          
+                "link": ""
+            }
+        except Exception:
+            return {
+                "intent": "weather_current",
+                "reply": "Ne mogu trenutno da dohvatim vremensku prognozu.",
+                "link": ""
+            }
     
     if any(k in msg for k in ["radno vreme", "radno vrijeme", "kada rade", "radite", "radite li"]):
         return {

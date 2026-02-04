@@ -35,8 +35,8 @@ class UserAdminForm(forms.ModelForm):
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     form = UserAdminForm
-    list_display = ("username", "email", "role", "branch", "is_staff", "is_superuser")
-    list_filter = ("role", "branch", "is_staff", "is_superuser")
+    list_display = ("username", "email", "role","branch", "is_staff", "is_superuser")
+    list_filter = ("role","branch", "is_staff", "is_superuser" )
     search_fields = ("username", "email")
 
 @admin.register(Branch)
