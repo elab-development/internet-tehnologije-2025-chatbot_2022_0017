@@ -4,8 +4,14 @@ from django import forms
 from django.contrib import admin
 from .models import User
 
+
 class UserAdminForm(forms.ModelForm):
-    class Meta:
+    """
+    Ova forma radi 2 stvari:
+    1) Validira pravila (role/branch/is_staff/is_superuser)
+    2) Ako je password unesen kao "plain text" u adminu, pretvori ga u hash (set_password)
+    """
+    class Meta:    
         model = User
         fields = "__all__"
 
@@ -19,24 +25,51 @@ class UserAdminForm(forms.ModelForm):
         if is_superuser:
             cleaned["role"] = "admin"
             cleaned["is_staff"] = True
+            cleaned["branch"] = None
             return cleaned
 
         if role == "employee":
             cleaned["is_staff"] = True
-
             if not branch:
                 raise forms.ValidationError("Zaposleni mora imati dodijeljenu filijalu/banku.")
+
+        if role == "user" and branch is not None:
+            raise forms.ValidationError("Obični korisnik ne može imati dodijeljenu filijalu/banku.")
 
         if is_staff and role == "user":
             raise forms.ValidationError("Ako je is_staff=True, role mora biti employee ili admin.")
 
         return cleaned
 
+    def save(self, commit=True):
+        """
+        Ako je password unesen kao običan tekst u adminu, hashuj ga.
+        Ako je već hashovan, ne diraj.
+        """
+        user = super().save(commit=False)
+
+        raw = user.password or ""
+        is_hashed = False
+        try:
+            identify_hasher(raw)
+            is_hashed = True
+        except Exception:
+            is_hashed = False
+
+        if raw and not is_hashed:
+            user.set_password(raw)
+
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
+
+
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     form = UserAdminForm
-    list_display = ("username", "email", "role", "branch", "is_staff", "is_superuser")
-    list_filter = ("role", "branch", "is_staff", "is_superuser")
+    list_display = ("username", "email", "role","branch", "is_staff", "is_superuser")
+    list_filter = ("role","branch", "is_staff", "is_superuser" )
     search_fields = ("username", "email")
 
 @admin.register(Branch)
