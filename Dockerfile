@@ -13,6 +13,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
+RUN mkdir -p /app/data /app/staticfiles && chmod -R 777 /app/data /app/staticfiles
 
 CMD python manage.py migrate --noinput \
  && python manage.py collectstatic --noinput \
