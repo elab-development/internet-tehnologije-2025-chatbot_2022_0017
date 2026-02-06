@@ -62,7 +62,6 @@ export default function AdminStats() {
     })();
   }, []);
 
-  // ----- KPI summary (brzi pregled)
   const kpis = useMemo(() => {
     const totalAppointments = byStatus.reduce((acc, x) => acc + (x.total ?? 0), 0);
     const booked = byStatus.find((x) => String(x.status).toLowerCase() === "booked")?.total ?? 0;
@@ -72,7 +71,6 @@ export default function AdminStats() {
     return { totalAppointments, booked, cancelled, totalUsers };
   }, [byStatus, usersByRole]);
 
-  // ----- shared chart options (da izgleda “pro”)
   const baseOptions = useMemo(
     () => ({
       responsive: true,

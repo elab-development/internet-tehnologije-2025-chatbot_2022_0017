@@ -19,11 +19,6 @@ export async function createAppointment(payload) {
   return res.data;
 }
 
-// export async function getMyAppointments() {
-//   const res = await api.get("/appointments/my/");
-//   return res.data;
-// }
-
 export async function cancelAppointment(id) {
   const res = await api.post(`/appointments/${id}/cancel/`);
   return res.data;

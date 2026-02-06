@@ -12,8 +12,8 @@ export default function Branches() {
 
   const { user, isLoading, isAuthed } = useAuth();
 
-  const role = user?.role;                 // "admin" | "employee" | "user" ...
-  const canReserve = role === "user";      // samo user (klijent) sme
+  const role = user?.role;                 
+  const canReserve = role === "user";      
 
   useEffect(() => {
     (async () => {

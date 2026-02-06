@@ -146,18 +146,16 @@
   .list-group-item:hover {
     transform: translateY(-1px);
   }
-/* Bitno: card-body ne smije imati overflow:hidden ako želiš sticky unutra */
 .card-body {
   overflow: visible;
 }
 
-/* Sticky zona za akcije */
 .sticky-actions{
   position: sticky;
   bottom: 0;
   z-index: 5;
 
-  background: rgba(33, 37, 41, 0.92); /* bootstrap bg-dark */
+  background: rgba(33, 37, 41, 0.92); 
   backdrop-filter: blur(6px);
 
   border-top: 1px solid rgba(255,255,255,0.08);
@@ -167,7 +165,6 @@
   margin-top: 14px;
 }
 
-/* da se poslednji slot ne sakrije ispod sticky dela */
 .list-group{
   margin-bottom: 12px;
 }
@@ -364,11 +361,9 @@
   margin-top: 12px;
 }
 
-/* nemoj opacity na container, koristi rgba pozadinu */
 .glass-card {
-  background: rgba(17, 24, 39, 0.55); /* primjer */
+  background: rgba(17, 24, 39, 0.55); 
 }
-
 
 .status-pill{
   display: inline-block;
@@ -413,14 +408,12 @@
   margin-top: 2px;
 }
 
-/* chart visine */
 .chart-box {
   width: 100%;
 }
 .chart-lg { height: 320px; }
 .chart-md { height: 260px; }
 
-/* KPI */
 .stat-kpi {
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -449,10 +442,10 @@
 .kpi-label { color: rgba(255,255,255,0.65); }
 .kpi-value { color: #fff; font-size: 1.9rem; font-weight: 800; }
 .stat-title {
-  font-weight: 800;              /* jače */
-  font-size: 1.25rem;            /* veće */
+  font-weight: 800;            
+  font-size: 1.25rem;            
   letter-spacing: 0.3px;
-  color: #ffffff;                /* pun kontrast */
+  color: #ffffff;              
   margin-bottom: 2px;
 }
 .stat-subtitle {

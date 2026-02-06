@@ -15,7 +15,6 @@ export default function AdminPanel() {
         setErr("");
         setLoading(true);
 
-        // 🔥 OVO JE TVOJ ENDPOINT
         const res = await api.get("/admin/appointments/");
         setAppointments(res.data || []);
       } catch (e) {

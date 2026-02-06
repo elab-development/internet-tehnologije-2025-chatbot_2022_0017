@@ -40,7 +40,6 @@ useEffect(() => {
         const u = await me();
         setUser(u);
       } catch (e) {
-        // ignore
       } finally {
         setUserLoaded(true);
       }
@@ -52,13 +51,10 @@ useEffect(() => {
   const isEmployee = useMemo(() => role === "employee", [role]);
 
   const isAdmin = useMemo(() => {
-    // primarno: role iz backenda
     if (role === "admin") return true;
 
-    // fallback: Django flags (ako ih backend šalje)
     if (user?.is_superuser) return true;
 
-    // is_staff često znači admin/staff, ne employee
     if (typeof user?.is_staff === "boolean" && user.is_staff === true && role !== "employee") return true;
 
     return false;
@@ -66,7 +62,6 @@ useEffect(() => {
 
   const blocked = userLoaded && (isEmployee || isAdmin);
 
-  // Učitaj filijale
   useEffect(() => {
     (async () => {
       try {
@@ -78,7 +73,6 @@ useEffect(() => {
     })();
   }, []);
 
-  // Učitaj slotove
   useEffect(() => {
     (async () => {
       if (!branchId || !date) return;

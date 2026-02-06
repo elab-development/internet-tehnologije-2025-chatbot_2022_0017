@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthCard from "../components/AuthCard";
-import { registerUser } from "../api/auth"; // prilagodi
+import { registerUser } from "../api/auth"; 
 export default function Register() {
   const nav = useNavigate();
 
@@ -37,7 +37,6 @@ export default function Register() {
       setOk("Nalog je kreiran. Možeš da se prijaviš.");
       setTimeout(() => nav("/login"), 800);
     } catch (e2) {
-      // DRF često vraća field errors
       const data = e2?.response?.data;
       const msg =
         (data && JSON.stringify(data)) ||

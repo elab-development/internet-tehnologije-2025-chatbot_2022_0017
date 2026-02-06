@@ -70,7 +70,7 @@ export default function ChatWidget() {
     setSending(true);
 
     try {
-      const res = await sendChat(trimmed); // { intent, reply, link? }
+      const res = await sendChat(trimmed); 
       const reply = res?.reply?.trim() || "Nemam odgovor trenutno.";
 
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
