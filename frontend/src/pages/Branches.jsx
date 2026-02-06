@@ -2,13 +2,18 @@ import { useEffect, useState } from "react";
 import { getBranches } from "../api/appointments";
 import { useNavigate } from "react-router-dom";
 import WeatherCard from "../components/WeatherCard";
-
+import { useAuth } from "../context/AuthContext";
 
 export default function Branches() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const navigate = useNavigate();
+
+  const { user, isLoading, isAuthed } = useAuth();
+
+  const role = user?.role;                 
+  const canReserve = role === "user";      
 
   useEffect(() => {
     (async () => {
@@ -25,16 +30,33 @@ export default function Branches() {
   }, []);
 
   return (
-    
     <div className="container py-4">
       <div className="d-flex align-items-center justify-content-between mb-3">
         <h3 className="mb-0">Filijale</h3>
-        <button className="btn btn-primary" onClick={() => navigate("/reserve")}>
+
+        <button
+          className="btn btn-primary"
+          onClick={() => navigate("/reserve")}
+          disabled={!isAuthed || isLoading || !canReserve}
+          title={
+            !isAuthed
+              ? "Moraš biti ulogovan"
+              : !canReserve
+              ? "Samo klijent može rezervisati termin"
+              : ""
+          }
+        >
           Rezerviši termin
         </button>
       </div>
 
-      {/* 🔽 VREMENSKA PROGNOZA */}
+      {/* poruka ako je ulogovan ali nema pravo */}
+      {isAuthed && !isLoading && !canReserve && (
+        <div className="alert alert-warning">
+          Rezervisanje termina je dostupno samo klijentima. (tvoja uloga: <b>{role}</b>)
+        </div>
+      )}
+
       <div className="mb-4">
         <WeatherCard city="Belgrade" />
       </div>
@@ -45,7 +67,6 @@ export default function Branches() {
           Učitavam...
         </div>
       )}
-
 
       {err && (
         <div className="alert alert-danger mt-3 mb-0" role="alert">
@@ -83,7 +104,9 @@ export default function Branches() {
 
                   <div className="d-flex justify-content-between">
                     <span className="text-white-50">Radno vrijeme</span>
-                    <span>{b.open_time} – {b.close_time}</span>
+                    <span>
+                      {b.open_time} – {b.close_time}
+                    </span>
                   </div>
 
                   <div className="d-flex justify-content-between">
@@ -94,12 +117,14 @@ export default function Branches() {
               </div>
 
               <div className="card-footer bg-transparent border-secondary d-flex justify-content-end">
-                <button
-                  className="btn btn-outline-light btn-sm"
-                  onClick={() => navigate("/reserve")}
-                >
-                  Izaberi termin
-                </button>
+                {canReserve && (
+                  <button
+                    className="btn btn-outline-light btn-sm"
+                    onClick={() => navigate(`/reserve?branchId=${b.id}`)}
+                  >
+                    Izaberi termin
+                  </button>
+                )}
               </div>
             </div>
           </div>

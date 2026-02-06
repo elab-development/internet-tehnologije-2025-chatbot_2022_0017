@@ -32,26 +32,29 @@ export default function Navbar() {
               <NavLink to="/branches" className={linkClass}>Filijale</NavLink>
             </li>
 
-            {/* Moji termini - samo za običnog korisnika */}
             {user?.role === "user" && (
               <li className="nav-item">
                 <NavLink to="/my-appointments" className={linkClass}>Moji termini</NavLink>
               </li>
             )}
 
-            {/* Employee panel */}
             {user?.role === "employee" && (
               <li className="nav-item">
                 <NavLink to="/employee" className={linkClass}>Termini filijale</NavLink>
               </li>
             )}
 
-            {/* Admin panel (placeholder, možeš posle da napraviš stranicu) */}
             {user?.role === "admin" && (
               <li className="nav-item">
                 <NavLink to="/admin" className={linkClass}>Admin</NavLink>
               </li>
             )}
+            {user?.role === "admin" && (
+                <NavLink className="nav-link" to="/admin/stats">
+                  Statistika
+                </NavLink>
+              )}
+
           </ul>
 
           <div className="d-flex align-items-center gap-2">

@@ -15,13 +15,7 @@ export async function getBranchSlots(branchId, date) {
 }
 
 export async function createAppointment(payload) {
-  // payload: { branch_id, start_time }
   const res = await api.post("/appointments/", payload);
-  return res.data;
-}
-
-export async function getMyAppointments() {
-  const res = await api.get("/appointments/my/");
   return res.data;
 }
 
