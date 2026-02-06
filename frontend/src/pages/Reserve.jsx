@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { getBranches, getBranchSlots, createAppointment } from "../api/appointments";
-import { me } from "../api/auth"; 
+import { me } from "../api/auth";
+import { useSearchParams } from "react-router-dom";
 
 export default function Reserve() {
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState("");
-  const [date, setDate] = useState(""); // YYYY-MM-DD
+  const [date, setDate] = useState("");
   const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [msg, setMsg] = useState("");
@@ -14,54 +15,76 @@ export default function Reserve() {
   const [user, setUser] = useState(null);
   const [userLoaded, setUserLoaded] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
+  const [searchParams] = useSearchParams();
 
-function formatSlot(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString("sr-RS", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+useEffect(() => {
+  const id = searchParams.get("branchId");
+  if (id) setBranchId(String(id));
+}, [searchParams]);
 
+  function formatSlot(iso) {
+    const d = new Date(iso);
+    return d.toLocaleString("sr-RS", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  // Učitaj korisnika
   useEffect(() => {
     (async () => {
       try {
         const u = await me();
         setUser(u);
       } catch (e) {
+        // ignore
       } finally {
         setUserLoaded(true);
       }
     })();
   }, []);
 
-  const isEmployee = useMemo(() => {
-    if (!user) return false;
-    if (user.role) return String(user.role).toLowerCase() === "employee";
-    if (typeof user.is_staff === "boolean") return user.is_staff === true;
-    return false;
-  }, [user]);
+  const role = useMemo(() => String(user?.role ?? "").toLowerCase(), [user]);
 
+  const isEmployee = useMemo(() => role === "employee", [role]);
+
+  const isAdmin = useMemo(() => {
+    // primarno: role iz backenda
+    if (role === "admin") return true;
+
+    // fallback: Django flags (ako ih backend šalje)
+    if (user?.is_superuser) return true;
+
+    // is_staff često znači admin/staff, ne employee
+    if (typeof user?.is_staff === "boolean" && user.is_staff === true && role !== "employee") return true;
+
+    return false;
+  }, [user, role]);
+
+  const blocked = userLoaded && (isEmployee || isAdmin);
+
+  // Učitaj filijale
   useEffect(() => {
     (async () => {
       try {
         const data = await getBranches();
-        setBranches(data);
+        setBranches(Array.isArray(data) ? data : []);
       } catch (e) {
         setMsg("Greška pri učitavanju filijala.");
       }
     })();
   }, []);
 
+  // Učitaj slotove
   useEffect(() => {
     (async () => {
       if (!branchId || !date) return;
       try {
         const data = await getBranchSlots(branchId, date);
-        setSlots(data.available_slots || []);
+        setSlots(data?.available_slots || []);
         setSelectedSlot("");
       } catch (e) {
         setMsg("Greška pri učitavanju slobodnih termina.");
@@ -69,37 +92,43 @@ function formatSlot(iso) {
     })();
   }, [branchId, date]);
 
-const handleReserve = async () => {
-  setNotice({ type: "", text: "" });
+  const handleReserve = async () => {
+    setNotice({ type: "", text: "" });
 
-  if (isEmployee) {
-    setNotice({ type: "warning", text: "Zaposleni ne mogu zakazivati termine." });
-    return;
-  }
-  if (!branchId || !selectedSlot) {
-    setNotice({ type: "info", text: "Izaberi filijalu i termin." });
-    return;
-  }
+    if (isAdmin || isEmployee) {
+      setNotice({
+        type: "warning",
+        text: isAdmin
+          ? "Admin ne može zakazivati termine."
+          : "Zaposleni ne mogu zakazivati termine.",
+      });
+      return;
+    }
 
-  setIsSubmitting(true);
-  try {
-    await createAppointment({ branch_id: Number(branchId), start_time: selectedSlot });
+    if (!branchId || !selectedSlot) {
+      setNotice({ type: "info", text: "Izaberi filijalu i termin." });
+      return;
+    }
 
- setNotice({ type: "success", text: "Termin je uspješno zakazan ✅" });
-setToastOpen(true);
-setTimeout(() => setToastOpen(false), 2500);
+    setIsSubmitting(true);
+    try {
+      await createAppointment({ branch_id: Number(branchId), start_time: selectedSlot });
 
-    setSlots((prev) => prev.filter((x) => x !== selectedSlot));
-    setSelectedSlot("");
-  } catch (e) {
-    setNotice({
-      type: "danger",
-      text: "Neuspešno zakazivanje (termin zauzet ili neispravni podaci).",
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      setNotice({ type: "success", text: "Termin je uspješno zakazan ✅" });
+      setToastOpen(true);
+      setTimeout(() => setToastOpen(false), 2500);
+
+      setSlots((prev) => prev.filter((x) => x !== selectedSlot));
+      setSelectedSlot("");
+    } catch (e) {
+      setNotice({
+        type: "danger",
+        text: "Neuspešno zakazivanje (termin zauzet ili neispravni podaci).",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="container py-5">
@@ -108,23 +137,39 @@ setTimeout(() => setToastOpen(false), 2500);
           <div className="card bg-dark text-light border-secondary shadow">
             <div className="card-body">
               <h3 className="card-title mb-4">Rezerviši termin</h3>
+
               {notice.text && (
-  <div className={`alert alert-${notice.type} border-0`} role="alert">
-    {notice.text}
-  </div>
-)}
+                <div className={`alert alert-${notice.type} border-0`} role="alert">
+                  {notice.text}
+                </div>
+              )}
 
-
-              {/* Poruke */}
               {msg && (
                 <div className="alert alert-info border-0" role="alert">
                   {msg}
                 </div>
               )}
 
-              {userLoaded && isEmployee ? (
-                <div className="alert alert-warning border-0" role="alert">
-                  Zaposleni ne mogu da rezervišu termine. Možete pregledati raspored u panelu za zaposlene.
+              {blocked ? (
+                <div
+                  className={`alert ${isAdmin ? "alert-danger" : "alert-warning"} border-0`}
+                  role="alert"
+                >
+                  {isAdmin ? (
+                    <>
+                      <b>Admin ne može da rezerviše termin.</b>
+                      <div className="mt-1">
+                        Kao admin možeš upravljati filijalama, zaposlenima i pregledati termine u admin panelu.
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <b>Zaposleni ne mogu da rezervišu termine.</b>
+                      <div className="mt-1">
+                        Možete pregledati raspored u panelu za zaposlene.
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <>
@@ -214,6 +259,7 @@ setTimeout(() => setToastOpen(false), 2500);
                       </div>
                     )}
                   </div>
+
                   {/* Sticky akcije */}
                   <div className="sticky-actions pt-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -236,13 +282,14 @@ setTimeout(() => setToastOpen(false), 2500);
           </div>
         </div>
       </div>
-      <div className="toast-wrap">
-  <div className={"toast-card " + (toastOpen ? "show" : "")}>
-    <div className="toast-icon">✅</div>
-    <div className="toast-text">{notice.text}</div>
-  </div>
-</div>
 
+      {/* Toast */}
+      <div className="toast-wrap">
+        <div className={"toast-card " + (toastOpen ? "show" : "")}>
+          <div className="toast-icon">✅</div>
+          <div className="toast-text">{notice.text}</div>
+        </div>
+      </div>
     </div>
   );
 }

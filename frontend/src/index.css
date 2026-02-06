@@ -146,13 +146,32 @@
   .list-group-item:hover {
     transform: translateY(-1px);
   }
-  .sticky-actions{
-    position: sticky;
-    bottom: 0;
-    background: rgba(33,37,41,0.95); 
-    backdrop-filter: blur(6px);
-    padding-bottom: 12px;
-  }
+/* Bitno: card-body ne smije imati overflow:hidden ako želiš sticky unutra */
+.card-body {
+  overflow: visible;
+}
+
+/* Sticky zona za akcije */
+.sticky-actions{
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+
+  background: rgba(33, 37, 41, 0.92); /* bootstrap bg-dark */
+  backdrop-filter: blur(6px);
+
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 12px;
+  padding-bottom: 10px;
+
+  margin-top: 14px;
+}
+
+/* da se poslednji slot ne sakrije ispod sticky dela */
+.list-group{
+  margin-bottom: 12px;
+}
+
   .toast-wrap{
     position: fixed;
     top: 18px;
@@ -209,3 +228,258 @@
 
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   }
+.auth-page {
+  min-height: calc(100vh - 72px); 
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+}
+
+.auth-card{
+  background: rgba(18, 18, 28, 0.72); 
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+}
+
+.auth-card .text-muted{ color: rgba(255,255,255,0.65) !important; }
+
+.auth-card .form-control{
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #fff;
+}
+.auth-card .form-control::placeholder{ color: rgba(255,255,255,0.55); }
+.auth-card .form-label{ color: rgba(255,255,255,0.7); }
+
+
+.auth-page .container {
+  position: relative;
+  z-index: 1;
+}
+
+.form-control {
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.btn {
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.chart-box{
+  position: relative;
+  height: 260px;   
+  width: 100%;
+}
+.stats-card{
+  height: 340px;     
+  display: flex;
+  flex-direction: column;
+}
+.stats-card .chart-box{
+  flex: 1;            
+  height: auto;       
+}
+.admin-card{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(10, 12, 18, 0.65);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  padding: 18px;
+}
+
+.admin-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.admin-title{
+  margin:0;
+  font-weight: 900;
+  font-size: 1.6rem;
+  color:#fff;
+}
+
+.admin-subtitle{
+  margin-top: 4px;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.95rem;
+}
+
+.admin-controls{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-search{
+  min-width: 260px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+}
+
+.admin-search::placeholder{
+  color: rgba(255,255,255,0.55);
+}
+
+.admin-table-wrap{
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.admin-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(20, 24, 34, 0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.admin-table tbody tr:hover{
+  background: rgba(255,255,255,0.04) !important;
+}
+
+.admin-foot{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  margin-top: 12px;
+}
+
+/* nemoj opacity na container, koristi rgba pozadinu */
+.glass-card {
+  background: rgba(17, 24, 39, 0.55); /* primjer */
+}
+
+
+.status-pill{
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+.status-pill.booked{
+  background: rgba(34,197,94,0.15);
+  color: rgba(187,247,208,0.95);
+}
+
+.status-pill.canceled{
+  background: rgba(239,68,68,0.15);
+  color: rgba(254,202,202,0.95);
+}
+/* kartice */
+.stat-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.20);
+}
+
+.stat-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stat-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.stat-subtitle {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+/* chart visine */
+.chart-box {
+  width: 100%;
+}
+.chart-lg { height: 320px; }
+.chart-md { height: 260px; }
+
+/* KPI */
+.stat-kpi {
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.20);
+}
+
+.kpi-label {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+}
+
+.kpi-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-top: 6px;
+}
+.stat-card, .stat-kpi{
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(10, 12, 18, 0.65);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.kpi-label { color: rgba(255,255,255,0.65); }
+.kpi-value { color: #fff; font-size: 1.9rem; font-weight: 800; }
+.stat-title {
+  font-weight: 800;              /* jače */
+  font-size: 1.25rem;            /* veće */
+  letter-spacing: 0.3px;
+  color: #ffffff;                /* pun kontrast */
+  margin-bottom: 2px;
+}
+.stat-subtitle {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.6);
+}
+.stat-head {
+  position: relative;
+  padding-left: 12px;
+}
+
+.stat-head::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    #4F46E5,
+    #06B6D4,
+    #22C55E
+  );
+}
+.stat-title {
+  text-transform: uppercase;
+  font-size: 1.1rem;
+}

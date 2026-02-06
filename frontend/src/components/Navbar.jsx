@@ -49,6 +49,12 @@ export default function Navbar() {
                 <NavLink to="/admin" className={linkClass}>Admin</NavLink>
               </li>
             )}
+            {user?.role === "admin" && (
+                <NavLink className="nav-link" to="/admin/stats">
+                  Statistika
+                </NavLink>
+              )}
+
           </ul>
 
           <div className="d-flex align-items-center gap-2">

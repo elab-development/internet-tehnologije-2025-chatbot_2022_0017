@@ -8,6 +8,9 @@ import Navbar from "./components/Navbar";
 import FloatingChat from "./components/FloatingChat";
 import { useAuth } from "./context/AuthContext.jsx";
 import EmployeeAppointments from "./pages/EmployeeAppointments.jsx";
+import AdminStats from "./pages/AdminStats";
+import AdminPanel from "./pages/AdminPanel.jsx";
+
 
 function Protected({ children }) {
   const { isLoading, isAuthed } = useAuth();
@@ -61,14 +64,24 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
+                  <Route
+          path="/reserve"
+          element={
+            <RoleProtected roles={["user"]}>
+              <Reserve />
+            </RoleProtected>
+          }
+        />
+
           <Route
-            path="/reserve"
+            path="/admin/stats"
             element={
-              <Protected>
-                <Reserve />
-              </Protected>
+              <RoleProtected allow={["admin"]}>
+                <AdminStats />
+              </RoleProtected>
             }
           />
+
           <Route
             path="/employee"
             element={
@@ -96,17 +109,15 @@ export default function App() {
             }
           />
 
-          <Route
+                    <Route
             path="/admin"
             element={
               <RoleProtected allow={["admin"]}>
-                <div className="card p-3">
-                  <h4>Admin panel</h4>
-                  <p>Ovde admin vidi sve termine i korisnike.</p>
-                </div>
+                <AdminPanel />
               </RoleProtected>
             }
           />
+
 
           <Route path="*" element={<div className="card">404</div>} />
         </Routes>
