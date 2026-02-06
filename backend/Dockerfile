@@ -14,4 +14,5 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
 
-CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT
+EXPOSE 8000
+CMD gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120
