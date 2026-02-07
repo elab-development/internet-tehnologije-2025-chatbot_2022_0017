@@ -1,6 +1,9 @@
 import axios from "axios";
 
-const BASE = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000") + "/api";
+const API_ORIGIN =
+  import.meta.env.VITE_API_URL || "https://internet-tehnologije-2025-chatbot20220017-production.up.railway.app";
+
+const BASE = `${API_ORIGIN}/api`;
 
 
 const api = axios.create({// kreiranje axios instance s baznim URL-om i zaglavljima
