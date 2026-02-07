@@ -7,9 +7,7 @@ export async function me() {
   });
   return res.data;
 }
-console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
-console.log("API_ORIGIN =", API_ORIGIN);
-console.log("BASE =", BASE);
+
 
 export async function registerUser({ username, email, password, password2 }) {
   const res = await api.post("/auth/register/", {

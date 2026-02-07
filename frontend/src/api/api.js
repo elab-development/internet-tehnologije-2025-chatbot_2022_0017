@@ -4,7 +4,9 @@ const API_ORIGIN =
   import.meta.env.VITE_API_URL || "https://internet-tehnologije-2025-chatbot20220017-production.up.railway.app";
 
 const BASE = `${API_ORIGIN}/api`;
-
+console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
+console.log("API_ORIGIN =", API_ORIGIN);
+console.log("BASE =", BASE);
 
 const api = axios.create({// kreiranje axios instance s baznim URL-om i zaglavljima
   baseURL: BASE,
