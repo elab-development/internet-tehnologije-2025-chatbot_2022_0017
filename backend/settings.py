@@ -133,7 +133,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://internet-tehnologije-20025-chatbot2.vercel.app",
+    "https://internet-tehnologije-2025-chatbot-2.vercel.app",
 ]
 _env_cors = os.getenv("CORS_ALLOWED_ORIGINS", "")
 if _env_cors.strip():
@@ -141,7 +141,7 @@ if _env_cors.strip():
 CSRF_TRUSTED_ORIGINS = [x.strip() for x in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if x.strip()]
 CSRF_TRUSTED_ORIGINS = [
     "https://internet-tehnologije-2025-chatbot20220017-production.up.railway.app",
-    "https://internet-tehnologije-20025-chatbot2.vercel.app",
+    "https://internet-tehnologije-2025-chatbot-2.vercel.app",
 ]
 
 SESSION_COOKIE_SECURE = True
