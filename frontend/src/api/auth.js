@@ -3,7 +3,7 @@ import axios from "axios";
 
 export async function me() {
   const token = localStorage.getItem("access");
-  const res = await axios.get("http://127.0.0.1:8000/api/auth/me/", {
+  const res = await api.get("/auth/me/", {
     headers: { Authorization: `Bearer ${token}` },
   });
   return res.data;
