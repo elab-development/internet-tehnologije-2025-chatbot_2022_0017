@@ -1,5 +1,9 @@
+import api from "./api";
+
 export async function getWeather(city) {
-  const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
-  if (!res.ok) throw new Error("Weather fetch failed");
-  return res.json();
+  const res = await api.get("/weather/", {
+    params: { city },
+  });
+  return res.data;
 }
+
