@@ -1,29 +1,14 @@
 services:
-  backend:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    working_dir: /app
+    ports:
+      - "8080:8080"
     volumes:
-      - .:/app
       - sqlite_data:/app/data
-    ports:
-      - "8000:8000"
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     environment:
-      - CHOKIDAR_USEPOLLING=true
-    depends_on:
-      - backend
-    command: npm run dev -- --host 0.0.0.0 --port 5173
+      - PORT=8080
 
 volumes:
   sqlite_data:
